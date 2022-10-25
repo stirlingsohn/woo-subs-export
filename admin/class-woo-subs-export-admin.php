@@ -96,7 +96,7 @@ class Woo_Subs_Export_Admin {
 		 * class.
 		 */
 
-		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/woo-subs-export-admin.js', array( 'jquery' ), $this->version, false );
+		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/woo-subs-export-admin.js', array( 'jquery' ), $this->version, true );
 
 	}
 
@@ -136,26 +136,27 @@ class Woo_Subs_Export_Admin {
 	 * 
 	 * @since    1.0.0 
 	 */
-	public function get_subscriptions() {
+	public function get_subscriptions($args) {
 
-		$subscriptions = get_posts( array(
-		    'numberposts' => -1,
-		    'post_type'   => 'shop_subscription', 
-		    'post_status' => 'wc-active',
-		    'date_query' => array(
-		    	array(
-		    		'after'     => 'January 1st, 2013',
-		    		'before'    => array(
-		    			'year'  => 2013,
-		    			'month' => 2,
-		    			'day'   => 28,
-		    		),
-		    		'inclusive' => true,
-		    	),
-		    ),
-		));
-		$sales = count($subscriptions);
-		return ['sales' => $sales];
+		// query subscriptions
+		$subscriptions = get_posts( $args );
+
+		$subscription_rows = [
+			['id', 'status', 'date_created', 'first_name', 'last_name', 'email'] // Header info
+		];
+		// loop through subscriptions and create an array of their data
+		foreach( $subscriptions as $id ){
+			$subscription = wc_get_order( $id );
+			$data = $subscription->get_data();
+			$subscription_rows[] = [$data['id'], $data['status'], $data['date_created']->date('Y-m-d H:i:s'), $data['billing']['first_name'], $data['billing']['last_name'], $data['billing']['email']];
+		}
+
+		$sales = count($subscription_rows);
+		if ($sales){
+			return $subscription_rows;
+		} else {
+			throw new Exception(__('No data matching your criteria was found.', 'woo-subs-export'));
+		}
 		
 	}
 
@@ -166,20 +167,45 @@ class Woo_Subs_Export_Admin {
 	 * 
 	 * @since    1.0.0 
 	 */
-	public function wse_export($data) {
+	public function wse_export() {
 
-		return $_POST;
+		
+
+		$args = [
+			'numberposts' => -1,
+			'date_query' => [
+				'after' => $_POST['startdate'],
+				'before' => $_POST['enddate']
+			],
+			'post_status' => [$_POST['status']],
+			'post_type' => 'shop_subscription',
+			'fields' => 'ids',
+		];
+
+		try {
+			$response['data'] = $this->get_subscriptions($args);
+			$response['success_message'] = __('Successfully exported', 'woo-subs-export');
+		}
+
+		catch(Exception $e) {
+		  $response['error_message'] =  $e->getMessage();
+		}
+
+
+
+		// Create CSV
 
 		header('Content-Type: text/csv');
 		header('Content-Disposition: attachment; filename="subscriber_export.csv"');
-		$data = $this->get_subscriptions();
 
-		$fp = fopen('php://output', 'wb');
-		foreach ( $data as $line ) {
-		    $val = explode(",", $line);
-		    fputcsv($fp, $val);
+		$fp = fopen('subscriber_export.csv', 'wb');
+
+		foreach ($response['data'] as $fields) {
+		    fputcsv($fp, $fields);
 		}
+
 		fclose($fp);
+		exit( json_encode($response) );
 		
 	}
 

@@ -14,23 +14,35 @@
 ?>
 
 <!-- This file should primarily consist of HTML with a little bit of PHP. -->
-<h1>Hello World</h1>
-<form class="wse-ajax-form" method="POST" action="<?php echo admin_url('admin-ajax.php'); ?>">
+<h1><?php _e('Woocommerce Subscriptions Export', 'woo-subs-export'); ?></h1>
+<form id="wse-ajax-form" method="POST" action="<?php echo admin_url('admin-ajax.php'); ?>">
     <p>
         <label for="startdate">
             <?php _e('Subscribed between', 'woo-subs-export'); ?>
-            <input id="startdate" type="date">
+            <input name="startdate" id="startdate" type="date" value="<?php echo date("Y-m-d", strtotime("first day of previous month")) ?>">
         </label>
 
         <label for="enddate">
             <?php _e('and', 'woo-subs-export'); ?>
-            <input id="startdate" type="date">
+            <input name="enddate" id="startdate" type="date" value="<?php echo date("Y-m-d", strtotime("last day of previous month")) ?>">
         </label>
     </p>
-    <p class="message"></p>
+    <p>
+        <label for="status">
+            <?php _e('Subscription Status', 'woo-subs-export'); ?>
+            <select name="status" id="status">
+                <option value="wc-active"><?php _e('Active', 'woo-subs-export'); ?></option>
+                <option value="wc-on-hold"><?php _e('On Hold', 'woo-subs-export'); ?></option>
+                <option value="wc-pending"><?php _e('Pending', 'woo-subs-export'); ?></option>
+                <option value="wc-expired"><?php _e('Expired', 'woo-subs-export'); ?></option>
+                <option value="wc-cancelled"><?php _e('Cancelled', 'woo-subs-export'); ?></option>
+                <option value="wc-switched"><?php _e('Switched', 'woo-subs-export'); ?></option>
+            </select>
+        </label>
+    </p>
+    <p class="wse-message"></p>
+    <div class="wse-result"></div>
     <div class="spinner"></div>
     <input type="hidden" name="action" value="wse_export">
     <input type="submit" value="<?php _e('Export Subscribers', 'woo-subs-export'); ?>">
 </form>
-
-<?php //var_dump(Woo_Subs_Export_Admin::get_subscriptions()); ?>

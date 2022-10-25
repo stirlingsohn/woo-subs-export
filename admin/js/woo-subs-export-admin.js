@@ -31,21 +31,29 @@
 
 
 	
-	$('.wse-ajax-form').on('submit', function(e) {
-	    e.preventDefault();
+	$('#wse-ajax-form').on('submit', function(e) {
+		e.preventDefault();
+	    
 	    var form = $(this);
-	    var msgField = form.find('.message');
+	    var msgField = form.find('.wse-message');
+	    var resultField = form.find('.wse-result');
 	    var spinner = form.find('.spinner');
-	
-	    spinner.removeClass('is-active');
-	    $.post(form.attr('action'), form.serialize(), function(data) {
-	        console.log(data);
-	        spinner.addClass('is-active');
-	        if ( data.error == true ) {
-	            msgField.html( data.error_message );
+
+	    // reset form
+	    msgField.html('');
+	    resultField.html('');
+
+	    spinner.addClass('is-active');
+
+	    $.post(form.attr('action'), form.serialize(), function(response) {
+	        console.log(response);
+	        spinner.removeClass('is-active');
+	        if ( response.error_message ) {
+	            msgField.html( response.error_message );
 	        } else {
 	            //form.find('.form-content').slideToggle(500);
-	            msgField.html( data.success_message );
+	            msgField.html( response.success_message );
+	            resultField.html( response.data );
 	        }
 	    }, 'json');
 	
