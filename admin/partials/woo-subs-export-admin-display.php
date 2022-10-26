@@ -16,6 +16,7 @@
 <!-- This file should primarily consist of HTML with a little bit of PHP. -->
 <h1><?php _e('Woocommerce Subscriptions Export', 'woo-subs-export'); ?></h1>
 <form id="wse-ajax-form" method="POST" action="<?php echo admin_url('admin-ajax.php'); ?>">
+    <input type="hidden" name="action" value="wse_export">
     <p>
         <label for="startdate">
             <?php _e('Subscribed between', 'woo-subs-export'); ?>
@@ -41,8 +42,11 @@
         </label>
     </p>
     <p class="wse-message"></p>
-    <div class="wse-result"></div>
-    <div class="spinner"></div>
-    <input type="hidden" name="action" value="wse_export">
-    <input type="submit" value="<?php _e('Export Subscribers', 'woo-subs-export'); ?>">
+    <p style="max-width: 170px;">
+        <input type="submit" value="<?php _e('Export Subscribers', 'woo-subs-export'); ?>">
+        <span class="spinner"></span>
+        <a class="wse-download-button button hidden" href="<?php echo wp_upload_dir()['baseurl'] . '/subscriber-exports/subscriber_export.csv'; ?>"><?php _e('Download CSV', 'woo-subs-export'); ?></a>
+    </p>
+    <table class="wse-result widefat hidden"></table>
+
 </form>

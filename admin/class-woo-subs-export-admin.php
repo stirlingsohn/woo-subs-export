@@ -141,18 +141,34 @@ class Woo_Subs_Export_Admin {
 		// query subscriptions
 		$subscriptions = get_posts( $args );
 
+		// Prepare Array
 		$subscription_rows = [
-			['id', 'status', 'date_created', 'first_name', 'last_name', 'email'] // Header info
+			// Table Header / Column Names
+			['id', 'email', 'first_name', 'last_name', 'address_1', 'postcode', 'city', 'country', 'status', 'date_created', 'formatted_order_total', 'payment_method', 'coupon_codes' ] 
 		];
 		// loop through subscriptions and create an array of their data
 		foreach( $subscriptions as $id ){
 			$subscription = wc_get_order( $id );
 			$data = $subscription->get_data();
-			$subscription_rows[] = [$data['id'], $data['status'], $data['date_created']->date('Y-m-d H:i:s'), $data['billing']['first_name'], $data['billing']['last_name'], $data['billing']['email']];
+			$subscription_rows[] = [
+				$data['id'],
+				$data['billing']['email'],
+				$data['billing']['first_name'],
+				$data['billing']['last_name'],
+				$data['billing']['address_1'],
+				$data['billing']['postcode'],
+				$data['billing']['city'],
+				$data['billing']['country'],
+				$data['status'],
+				$data['date_created']->date('Y-m-d H:i:s'),
+				html_entity_decode(wp_strip_all_tags($subscription->get_formatted_order_total())),
+				$data['payment_method'],
+				implode(' | ', $subscription->get_coupon_codes())
+			];
 		}
 
 		$sales = count($subscription_rows);
-		if ($sales){
+		if ($sales > 1){
 			return $subscription_rows;
 		} else {
 			throw new Exception(__('No data matching your criteria was found.', 'woo-subs-export'));
@@ -198,10 +214,10 @@ class Woo_Subs_Export_Admin {
 		header('Content-Type: text/csv');
 		header('Content-Disposition: attachment; filename="subscriber_export.csv"');
 
-		$fp = fopen('subscriber_export.csv', 'wb');
+		$fp = fopen(wp_upload_dir()['basedir'] . '/subscriber-exports/subscriber_export.csv', 'w');
 
 		foreach ($response['data'] as $fields) {
-		    fputcsv($fp, $fields);
+		    fputcsv($fp, $fields, ';');
 		}
 
 		fclose($fp);
