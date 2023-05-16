@@ -61,18 +61,6 @@ class Woo_Subs_Export_Admin {
 	 */
 	public function enqueue_styles() {
 
-		/**
-		 * This function is provided for demonstration purposes only.
-		 *
-		 * An instance of this class should be passed to the run() function
-		 * defined in Woo_Subs_Export_Loader as all of the hooks are defined
-		 * in that particular class.
-		 *
-		 * The Woo_Subs_Export_Loader will then create the relationship
-		 * between the defined hooks and the functions defined in this
-		 * class.
-		 */
-
 		wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/woo-subs-export-admin.css', array(), $this->version, 'all' );
 
 	}
@@ -84,39 +72,28 @@ class Woo_Subs_Export_Admin {
 	 */
 	public function enqueue_scripts() {
 
-		/**
-		 * This function is provided for demonstration purposes only.
-		 *
-		 * An instance of this class should be passed to the run() function
-		 * defined in Woo_Subs_Export_Loader as all of the hooks are defined
-		 * in that particular class.
-		 *
-		 * The Woo_Subs_Export_Loader will then create the relationship
-		 * between the defined hooks and the functions defined in this
-		 * class.
-		 */
-
 		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/woo-subs-export-admin.js', array( 'jquery' ), $this->version, true );
 
 	}
 
 
 	/**
-	 * 
-	 * Add Options Page to export orders
-	 * 
-	 * @since    1.0.0 
-	 */
-	public function add_backend_page() {
-		add_options_page(
-			__('Export Subscriptions', 'woo-subs-export'),
-			__('Export Subscriptions', 'woo-subs-export'),
-			'list_users',
-			'woo-subs-export',
-			array($this, 'render_backend_page_content'),
-			null
-		);
-	}
+     * 
+     * Add admin Page to export orders
+     * @since    1.0.0 
+     */
+
+    public function add_backend_page() {
+        add_submenu_page( 
+            'tools.php',
+            __('Export Subscribers', 'woo-subs-export'),
+            __('Export Subscribers', 'woo-subs-export'), 
+            'list_users', 
+            'woo-subs-export', 
+            array($this, 'render_backend_page_content'),
+            null
+        );
+    }
 
 
 	/**
@@ -141,18 +118,47 @@ class Woo_Subs_Export_Admin {
 		// query subscriptions
 		$subscriptions = get_posts( $args );
 
+		// Prepare Array
 		$subscription_rows = [
-			['id', 'status', 'date_created', 'first_name', 'last_name', 'email'] // Header info
+			// Table Header / Column Names
+			['ID', 'E-Mail', 'Vorname', 'Nachname', 'Adresse', 'PLZ', 'Ort', 'Land', 'Produkt', 'Variante', 'Status', 'Registriert am', 'Startdatum', 'Letzte Zahlung', 'Nächste Zahlung', 'Total', 'Zahlungen', 'Zahlungsmittel' ] 
 		];
 		// loop through subscriptions and create an array of their data
 		foreach( $subscriptions as $id ){
 			$subscription = wc_get_order( $id );
 			$data = $subscription->get_data();
-			$subscription_rows[] = [$data['id'], $data['status'], $data['date_created']->date('Y-m-d H:i:s'), $data['billing']['first_name'], $data['billing']['last_name'], $data['billing']['email']];
+
+			// Get and Loop Over Order Items
+			foreach ( $subscription->get_items() as $item_id => $item ) {
+			   $product_id = $item->get_product_id();
+			   $variation_id = $item->get_variation_id();
+			   $product = $item->get_product(); // see link above to get $product info
+			}
+
+			$subscription_rows[] = [
+				$data['id'],
+				$data['billing']['email'],
+				$data['billing']['first_name'],
+				$data['billing']['last_name'],
+				$data['billing']['address_1'],
+				$data['billing']['postcode'],
+				$data['billing']['city'],
+				$data['billing']['country'],
+				explode(' - ',$product->get_name())[0],
+				explode(' - ',$product->get_name())[1],
+				$data['status'],
+				$data['date_created']->date('Y-m-d H:i:s'),
+				$subscription->get_date('start'),
+				$subscription->get_date('last_payment'),
+				$subscription->calculate_date('next_payment'),
+				html_entity_decode(wp_strip_all_tags($subscription->get_formatted_order_total())),
+				$subscription->get_payment_count(),
+				$data['payment_method']
+			];
 		}
 
 		$sales = count($subscription_rows);
-		if ($sales){
+		if ($sales > 1){
 			return $subscription_rows;
 		} else {
 			throw new Exception(__('No data matching your criteria was found.', 'woo-subs-export'));
@@ -168,8 +174,6 @@ class Woo_Subs_Export_Admin {
 	 * @since    1.0.0 
 	 */
 	public function wse_export() {
-
-		
 
 		$args = [
 			'numberposts' => -1,
@@ -198,15 +202,16 @@ class Woo_Subs_Export_Admin {
 		header('Content-Type: text/csv');
 		header('Content-Disposition: attachment; filename="subscriber_export.csv"');
 
-		$fp = fopen('subscriber_export.csv', 'wb');
+		$fp = fopen(wp_upload_dir()['basedir'] . '/subscriber-exports/subscriber_export.csv', 'w');
 
 		foreach ($response['data'] as $fields) {
-		    fputcsv($fp, $fields);
+		    fputcsv($fp, $fields, ';');
 		}
 
 		fclose($fp);
 		exit( json_encode($response) );
 		
 	}
+
 
 }

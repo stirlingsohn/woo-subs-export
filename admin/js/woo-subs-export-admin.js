@@ -30,6 +30,19 @@
 	 */
 
 
+	// Populate a Table with JSON
+	function writeDataToTable(elem, rows) {
+	    const table = elem;
+	    rows.forEach( row => {
+	      let r = table.insertRow();
+	      row.slice().reverse().forEach( cell => {
+	      	let c = r.insertCell(0);
+	      	c.innerHTML = cell;
+	      });
+	    });
+	}
+
+
 	
 	$('#wse-ajax-form').on('submit', function(e) {
 		e.preventDefault();
@@ -38,10 +51,11 @@
 	    var msgField = form.find('.wse-message');
 	    var resultField = form.find('.wse-result');
 	    var spinner = form.find('.spinner');
+	    var downloadButton = form.find('.wse-download-button');
 
 	    // reset form
 	    msgField.html('');
-	    resultField.html('');
+	    resultField.html('').addClass('hidden');
 
 	    spinner.addClass('is-active');
 
@@ -53,7 +67,9 @@
 	        } else {
 	            //form.find('.form-content').slideToggle(500);
 	            msgField.html( response.success_message );
-	            resultField.html( response.data );
+	            writeDataToTable(resultField[0], response.data);
+	            resultField.removeClass( 'hidden' );
+	            downloadButton.removeClass( 'hidden' );
 	        }
 	    }, 'json');
 	

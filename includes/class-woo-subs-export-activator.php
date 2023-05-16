@@ -30,7 +30,17 @@ class Woo_Subs_Export_Activator {
 	 * @since    1.0.0
 	 */
 	public static function activate() {
+        
 
+        $dirname = wp_upload_dir()['basedir'] . '/subscriber-exports';
+
+        // Get canonicalized absolute pathname
+        $path = realpath($dirname);
+
+        // If it exist, check if it's a directory
+        if ($path === false AND !is_dir($path)) {
+            mkdir($dirname);
+        }
 	}
 
 }
